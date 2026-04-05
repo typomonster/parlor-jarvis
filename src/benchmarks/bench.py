@@ -39,21 +39,13 @@ def make_wav_b64(duration_s: float, sample_rate: int = 16000) -> str:
 
 def make_jpg_b64(width: int = 320, height: int = 240) -> str:
     """Create a JPEG image as base64 string."""
-    import subprocess, tempfile
-    ppm = tempfile.NamedTemporaryFile(suffix=".ppm", delete=False)
-    rgb = np.zeros((height, width, 3), dtype=np.uint8)
-    rgb[:, :] = [100, 150, 200]
-    ppm.write(f"P6\n{width} {height}\n255\n".encode())
-    ppm.write(rgb.tobytes())
-    ppm.close()
-    jpg_path = ppm.name.replace(".ppm", ".jpg")
-    subprocess.run(["sips", "-s", "format", "jpeg", ppm.name, "--out", jpg_path],
-                   capture_output=True)
-    with open(jpg_path, "rb") as f:
-        b64 = base64.b64encode(f.read()).decode()
-    os.unlink(ppm.name)
-    os.unlink(jpg_path)
-    return b64
+    import io
+    from PIL import Image
+
+    img = Image.new("RGB", (width, height), color=(100, 150, 200))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return base64.b64encode(buf.getvalue()).decode()
 
 
 # ── WebSocket client ───────────────────────────────────────────────────────

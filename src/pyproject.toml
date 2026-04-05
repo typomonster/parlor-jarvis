@@ -11,6 +11,7 @@ dependencies = [
     "mlx-audio>=0.4.2; sys_platform == 'darwin'",
     "num2words>=0.5.14; sys_platform == 'darwin'",
     "numpy>=2.4.4",
+    "pillow>=11.0.0",
     "soundfile>=0.13.1",
     "uvicorn[standard]>=0.43.0",
     "websockets>=16.0",

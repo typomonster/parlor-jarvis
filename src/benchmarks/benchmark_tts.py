@@ -1,9 +1,10 @@
 """Benchmark: kokoro-onnx (CPU) vs mlx-audio (Apple GPU) for Kokoro TTS."""
 
+import platform
+import sys
 import time
 import statistics
 import numpy as np
-from pathlib import Path
 
 # Test sentences of varying length
 SENTENCES = {
@@ -27,10 +28,10 @@ RUNS = 5
 def benchmark_kokoro_onnx():
     """Benchmark kokoro-onnx (ONNX Runtime, CPU)."""
     import kokoro_onnx
+    from huggingface_hub import hf_hub_download
 
-    tts_dir = Path(__file__).parent.parent
-    model_path = str(tts_dir / "kokoro-v1.0.onnx")
-    voices_path = str(tts_dir / "voices-v1.0.bin")
+    model_path = hf_hub_download("fastrtc/kokoro-onnx", "kokoro-v1.0.onnx")
+    voices_path = hf_hub_download("fastrtc/kokoro-onnx", "voices-v1.0.bin")
 
     print("Loading kokoro-onnx...")
     t0 = time.time()
@@ -178,27 +179,32 @@ def print_streaming_results(results):
 
 
 if __name__ == "__main__":
+    is_apple = sys.platform == "darwin" and platform.machine() == "arm64"
+
     print("=" * 60)
-    print("  TTS Benchmark: kokoro-onnx vs mlx-audio")
-    print(f"  Hardware: Apple Silicon (M3 Pro)")
+    if is_apple:
+        print("  TTS Benchmark: kokoro-onnx vs mlx-audio")
+    else:
+        print("  TTS Benchmark: kokoro-onnx")
     print(f"  Warmup: {WARMUP} runs, Measured: {RUNS} runs")
     print("=" * 60)
 
     onnx_results = benchmark_kokoro_onnx()
     print_results("kokoro-onnx (ONNX Runtime, CPU)", onnx_results)
 
-    mlx_results = benchmark_mlx_audio()
-    print_results("mlx-audio (MLX, Apple GPU)", mlx_results)
+    if is_apple:
+        mlx_results = benchmark_mlx_audio()
+        print_results("mlx-audio (MLX, Apple GPU)", mlx_results)
 
-    streaming_results = benchmark_mlx_audio_streaming()
-    print_streaming_results(streaming_results)
+        streaming_results = benchmark_mlx_audio_streaming()
+        print_streaming_results(streaming_results)
 
-    # Comparison
-    print(f"\n{'=' * 60}")
-    print(f"  Comparison: speedup of mlx-audio over kokoro-onnx")
-    print(f"{'=' * 60}")
-    for label in SENTENCES:
-        onnx_mean = onnx_results[label]["mean"]
-        mlx_mean = mlx_results[label]["mean"]
-        speedup = onnx_mean / mlx_mean
-        print(f"  [{label}]  {onnx_mean*1000:.0f}ms -> {mlx_mean*1000:.0f}ms  ({speedup:.2f}x {'faster' if speedup > 1 else 'slower'})")
+        # Comparison
+        print(f"\n{'=' * 60}")
+        print(f"  Comparison: speedup of mlx-audio over kokoro-onnx")
+        print(f"{'=' * 60}")
+        for label in SENTENCES:
+            onnx_mean = onnx_results[label]["mean"]
+            mlx_mean = mlx_results[label]["mean"]
+            speedup = onnx_mean / mlx_mean
+            print(f"  [{label}]  {onnx_mean*1000:.0f}ms -> {mlx_mean*1000:.0f}ms  ({speedup:.2f}x {'faster' if speedup > 1 else 'slower'})")
