@@ -55,8 +55,8 @@ No M3 Pro benchmarks published, but expect GPU decode in the 60-100+ tok/s range
 
 | Language | Status | Best For |
 |----------|--------|----------|
-| **C++** | **Stable** | High-performance native |
-| Python | Stable | Prototyping & production (CPU + GPU via WebGPU/Metal) |
+| **C++** | **Stable** | High-performance native (native Metal GPU) |
+| Python | Stable | Prototyping & production (CPU + GPU via WebGPU/Metal). Native Metal crashes in Python due to ABI mismatch. |
 | Kotlin | Stable | Android apps |
 | Swift | **In Dev** | iOS/macOS (no public code yet) |
 
