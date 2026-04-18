@@ -48,8 +48,8 @@ Browser (playback + transcript)
 Parlor has two pieces: a **FastAPI** backend (`src/`) and a **Next.js** frontend (`web/`). In development you run both — Next proxies `/ws` to FastAPI so the browser talks to a single origin.
 
 ```bash
-git clone https://github.com/fikrikarim/parlor.git
-cd parlor
+git clone https://github.com/typomonster/parlor-multilingual.git
+cd parlor-multilingual
 ```
 
 **Terminal 1 — backend:**
@@ -164,6 +164,7 @@ parlor/
 
 - [Gemma 4](https://ai.google.dev/gemma) by Google DeepMind
 - [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM) by Google AI Edge
+- [Supertonic](https://huggingface.co/Supertone/supertonic-2) multilingual TTS by Supertone
 - [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) TTS by Hexgrad
 - [Silero VAD](https://github.com/snakers4/silero-vad) for browser voice activity detection
 

@@ -8,6 +8,7 @@ import {
   Film,
   Lock,
   Monitor,
+  RefreshCw,
   Video,
   X,
 } from "lucide-react";
@@ -168,6 +169,8 @@ export default function Home() {
   const screenSendingRef = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfDocRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdfRenderTaskRef = useRef<any>(null);
   const pdfLoadedRef = useRef(false);
   const pdfSendingRef = useRef(false);
   const videoLoadedRef = useRef(false);
@@ -396,13 +399,32 @@ export default function Home() {
     const doc = pdfDocRef.current;
     const canvas = pdfCanvasRef.current;
     if (!doc || !canvas) return;
+    // Cancel any in-flight render — pdfjs throws if two renders hit
+    // the same canvas concurrently (fires when the user spams prev/next).
+    const prev = pdfRenderTaskRef.current;
+    if (prev) {
+      try {
+        prev.cancel();
+      } catch {}
+      pdfRenderTaskRef.current = null;
+    }
     const page = await doc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    await page.render({ canvasContext: ctx, canvas, viewport }).promise;
+    const task = page.render({ canvasContext: ctx, canvas, viewport });
+    pdfRenderTaskRef.current = task;
+    try {
+      await task.promise;
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "RenderingCancelledException") {
+        throw e;
+      }
+    } finally {
+      if (pdfRenderTaskRef.current === task) pdfRenderTaskRef.current = null;
+    }
   }, []);
 
   const loadPdfFile = useCallback(
@@ -426,6 +448,10 @@ export default function Home() {
   );
 
   const removePdf = useCallback(() => {
+    try {
+      pdfRenderTaskRef.current?.cancel?.();
+    } catch {}
+    pdfRenderTaskRef.current = null;
     pdfDocRef.current?.destroy?.();
     pdfDocRef.current = null;
     pdfLoadedRef.current = false;
@@ -910,6 +936,10 @@ export default function Home() {
       stopPlayback();
       cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
       screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      try {
+        pdfRenderTaskRef.current?.cancel?.();
+      } catch {}
+      pdfRenderTaskRef.current = null;
       pdfDocRef.current?.destroy?.();
       if (videoObjectUrlRef.current) {
         URL.revokeObjectURL(videoObjectUrlRef.current);
@@ -943,6 +973,28 @@ export default function Home() {
       disableScreenShare();
       return;
     }
+    const ok = await enableScreenShare();
+    if (!ok) setScreenError(t("screen.permissionDenied"));
+    else setScreenError(null);
+  };
+
+  // Open a one-shot file picker without persisting a hidden input.
+  const pickFile = (accept: string, onFile: (f: File) => void) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.onchange = () => {
+      const f = input.files?.[0];
+      if (f) onFile(f);
+    };
+    input.click();
+  };
+
+  const onReplacePdf = () => pickFile("application/pdf", (f) => void loadPdfFile(f));
+  const onReplaceVideo = () => pickFile("video/*", loadVideoFile);
+
+  const onReplaceScreen = async () => {
+    disableScreenShare();
     const ok = await enableScreenShare();
     if (!ok) setScreenError(t("screen.permissionDenied"));
     else setScreenError(null);
@@ -1208,6 +1260,14 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="icon-xs"
+                    aria-label={t("file.replace")}
+                    onClick={onReplaceScreen}
+                  >
+                    <RefreshCw />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     aria-label={t("file.remove")}
                     onClick={onScreenToggleShare}
                   >
@@ -1281,9 +1341,17 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon-xs"
+                      aria-label={t("file.replace")}
+                      onClick={onReplacePdf}
+                      className="ml-1"
+                    >
+                      <RefreshCw />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       aria-label={t("file.remove")}
                       onClick={removePdf}
-                      className="ml-1"
                     >
                       <X />
                     </Button>
@@ -1330,9 +1398,17 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="icon-xs"
+                    aria-label={t("file.replace")}
+                    onClick={onReplaceVideo}
+                    className="ml-1"
+                  >
+                    <RefreshCw />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     aria-label={t("file.remove")}
                     onClick={removeVideo}
-                    className="ml-1"
                   >
                     <X />
                   </Button>
