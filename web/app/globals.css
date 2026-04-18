@@ -1,0 +1,692 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ─────────────────────────────────────────────────────
+   Parlor app styles (ported from the original index.html).
+   Kept in CSS rather than Tailwind because the glow layers
+   and state-driven animations are cleaner as classes.
+   ──────────────────────────────────────────────────── */
+
+/* Font stack: Latin first, CJK (Korean) second, system fallback last.
+   The browser picks per-codepoint — Latin chars get Instrument Sans,
+   Korean falls through to Noto Sans KR, everything else to system. */
+:root {
+  --font-body:
+    var(--font-latin), var(--font-cjk), system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-display:
+    var(--font-display-latin), var(--font-cjk), system-ui, sans-serif;
+  --font-sans: var(--font-body);
+}
+
+/* Light-mode Parlor palette (default) */
+:root {
+  --c-bg: #f7f7f9;
+  --c-surface: rgba(0, 0, 0, 0.04);
+  --c-surface-hover: rgba(0, 0, 0, 0.07);
+  --c-text: #3f3f46;
+  --c-text-dim: #a1a1aa;
+  --c-text-bright: #18181b;
+
+  --c-listen: #16a34a;
+  --c-listen-dim: rgba(22, 163, 74, 0.12);
+  --c-process: #d97706;
+  --c-process-dim: rgba(217, 119, 6, 0.12);
+  --c-speak: #6366f1;
+  --c-speak-dim: rgba(99, 102, 241, 0.12);
+  --c-loading: #a1a1aa;
+  --c-loading-dim: rgba(161, 161, 170, 0.12);
+
+  --glow: var(--c-loading);
+  --glow-dim: var(--c-loading-dim);
+}
+
+/* Dark-mode Parlor palette (applied when next-themes sets `.dark`) */
+.dark {
+  --c-bg: #050509;
+  --c-surface: rgba(255, 255, 255, 0.04);
+  --c-surface-hover: rgba(255, 255, 255, 0.07);
+  --c-text: #c8cad0;
+  --c-text-dim: #5a5d66;
+  --c-text-bright: #eef0f4;
+
+  --c-listen: #4ade80;
+  --c-listen-dim: rgba(74, 222, 128, 0.12);
+  --c-process: #f59e0b;
+  --c-process-dim: rgba(245, 158, 11, 0.12);
+  --c-speak: #818cf8;
+  --c-speak-dim: rgba(129, 140, 248, 0.12);
+  --c-loading: #3a3d46;
+  --c-loading-dim: rgba(58, 61, 70, 0.12);
+}
+
+.parlor-body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.parlor-body::before {
+  content: "";
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(ellipse, var(--glow-dim) 0%, transparent 70%);
+  pointer-events: none;
+  transition: background 0.6s ease;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+/* Top navbar — three flex groups across the full width. */
+.parlor-navbar {
+  width: 100%;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--c-surface);
+  z-index: 2;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--c-bg) 70%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.parlor-navbar-left,
+.parlor-navbar-center,
+.parlor-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Two-column main: AI conversation | 2x2 sources grid. */
+.parlor-main {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(340px, 2fr) minmax(520px, 3fr);
+  gap: 16px;
+  padding: 16px 20px 20px;
+  z-index: 1;
+  min-height: 0;
+}
+
+@media (max-width: 960px) {
+  .parlor-main {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(0, auto);
+  }
+}
+
+.parlor-chat-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--c-surface);
+  border: 1px solid color-mix(in oklab, var(--c-text-dim) 15%, transparent);
+}
+
+.parlor-sources-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.parlor-chat-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in oklab, var(--c-text-dim) 12%, transparent);
+}
+
+.parlor-chat-footer .state-indicator {
+  flex: 1;
+}
+
+.parlor-chat-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.parlor-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.parlor-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--glow) 0%, transparent 100%);
+  opacity: 0.7;
+  transition: background 0.4s ease, opacity 0.4s ease;
+}
+
+.parlor-logo h1 {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--c-text-bright);
+  letter-spacing: 0.01em;
+}
+
+.parlor-model-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-text-dim);
+  letter-spacing: 0.03em;
+}
+
+.parlor-alert-wrap {
+  width: 100%;
+  padding: 10px 20px 0;
+  z-index: 2;
+}
+
+.parlor-alert-wrap [role="alert"] {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #b91c1c;
+}
+
+.dark .parlor-alert-wrap [role="alert"] {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+}
+
+/* Each tile in the 2x2 sources grid. Previously called viewport-wrap —
+   kept the class name so the JSX refs still hit the same selector. */
+.viewport-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0a0a10;
+  box-shadow: 0 0 0 1px
+    color-mix(in oklab, var(--c-text-dim) 18%, transparent);
+  transition: box-shadow 0.4s ease;
+}
+
+.viewport-wrap.listening {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--c-listen) 35%, transparent),
+    0 0 24px var(--c-listen-dim);
+}
+.viewport-wrap.processing {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--c-process) 35%, transparent),
+    0 0 24px var(--c-process-dim);
+}
+.viewport-wrap.speaking {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--c-speak) 40%, transparent),
+    0 0 32px var(--c-speak-dim);
+}
+.viewport-wrap.loading {
+  box-shadow: 0 0 0 1px
+    color-mix(in oklab, var(--c-text-dim) 20%, transparent);
+}
+
+/* Legacy layer node — kept so viewportGlowRef still has a target, but
+   the multi-layer breathing animation is intentionally retired in the
+   two-column grid. */
+.viewport-glow {
+  display: none;
+}
+
+.viewport-wrap video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+  background: #0a0a10;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  /* No default transform — the camera opts in to mirroring below. */
+}
+
+/* Camera is mirrored so the user sees themselves the way they'd see
+   themselves in a physical mirror. Screen capture must NEVER be mirrored. */
+.viewport-wrap video.mirror {
+  transform: scaleX(-1);
+}
+
+.viewport-wrap video.screen-video {
+  object-fit: contain;
+}
+
+.viewport-wrap video[data-hidden="true"] {
+  display: none;
+}
+
+/* PDF page rendered into this canvas; we center it inside the tile. */
+.viewport-wrap canvas.pdf-canvas {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  z-index: 2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.viewport-wrap canvas.pdf-canvas[data-hidden="true"] {
+  display: none;
+}
+
+.viewport-wrap video.uploaded-video {
+  background: #0a0a10;
+}
+
+/* Skeleton / empty state shown inside a media tile when no media is
+   active — e.g. Screen before "Share", PDF / Video before "Upload". */
+.viewport-upload {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--c-text);
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklab, var(--c-text-dim) 10%, transparent) 0 12px,
+    transparent 12px 24px
+  );
+}
+
+.dark .viewport-upload {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.015) 0 12px,
+    transparent 12px 24px
+  );
+}
+
+.viewport-upload-title {
+  font-size: 11px;
+  color: var(--c-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.viewport-upload p {
+  font-size: 11px;
+  color: var(--c-text-dim);
+  margin: 0;
+}
+
+/* Control strip layered on top of the viewport for PDF pagination /
+   uploaded-video file name + remove button. */
+.pdf-pager {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 100px;
+  background: rgba(10, 10, 16, 0.75);
+  color: #eef0f4;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(6px);
+}
+
+/* Tiny label pinned to the top-left of each tile identifying the source. */
+.tile-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 100px;
+  background: rgba(10, 10, 16, 0.55);
+  color: #eef0f4;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+}
+
+.tile-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+}
+
+.pdf-pager .video-file-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parlor-screen-error {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  font-size: 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.dark .parlor-screen-error {
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+}
+
+/* Inline audio waveform that sits next to the "Listening" label in the
+   controls row. Replaces the earlier standalone .waveform-wrap block. */
+.state-wave {
+  width: 96px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.transcript-wrap {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12px, black 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12px,
+    black 100%
+  );
+}
+
+.transcript-scroll-area {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.transcript-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px 4px;
+}
+
+.msg {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 85%;
+  animation: msg-in 0.25s ease-out;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: rgba(22, 163, 74, 0.1);
+  color: #166534;
+  border-bottom-right-radius: 4px;
+}
+
+.dark .msg.user {
+  background: rgba(74, 222, 128, 0.08);
+  color: #b0d8c0;
+}
+
+.msg.assistant {
+  align-self: flex-start;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-bottom-left-radius: 4px;
+}
+
+.msg .meta {
+  font-size: 10.5px;
+  color: var(--c-text-dim);
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 1.55em;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.5);
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dot-bounce {
+  0%,
+  60%,
+  100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.parlor-controls {
+  width: 100%;
+  max-width: 640px;
+  padding: 12px 4px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.state-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--c-text-dim);
+  transition: color 0.3s;
+}
+
+.state-indicator .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glow);
+  transition: background 0.3s;
+  box-shadow: 0 0 8px var(--glow-dim);
+}
+.state-indicator .dot.listening { animation: dot-pulse 2s ease-in-out infinite; }
+.state-indicator .dot.processing { animation: dot-pulse 0.6s ease-in-out infinite; }
+.state-indicator .dot.speaking { animation: dot-pulse 1s ease-in-out infinite; }
+.state-indicator .dot.loading { animation: dot-pulse 2.5s ease-in-out infinite; }
+
+@keyframes dot-pulse {
+  0%,
+  100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}

@@ -130,18 +130,43 @@ async def websocket_endpoint(ws: WebSocket):
 
             interrupted.clear()
 
+            # Accept images as a list of {source, blob} items. Fall back to
+            # the legacy single `image` field so the static index.html UI
+            # (which predates this change) still works.
+            images = list(msg.get("images") or [])
+            if not images and msg.get("image"):
+                images = [{"source": "camera", "blob": msg["image"]}]
+            images = [i for i in images if i.get("blob")]
+
             content = []
             if msg.get("audio"):
                 content.append({"type": "audio", "blob": msg["audio"]})
-            if msg.get("image"):
-                content.append({"type": "image", "blob": msg["image"]})
+            for item in images:
+                content.append({"type": "image", "blob": item["blob"]})
 
-            if msg.get("audio") and msg.get("image"):
-                content.append({"type": "text", "text": "The user just spoke to you (audio) while showing their camera (image). Respond to what they said, referencing what you see if relevant."})
-            elif msg.get("audio"):
+            source_labels = {
+                "camera": "camera",
+                "screen": "screen",
+                "pdf": "a PDF page",
+                "video": "a video frame",
+            }
+            sources = [
+                source_labels.get(i.get("source", ""), i.get("source") or "image")
+                for i in images
+            ]
+
+            def _join(items):
+                if len(items) <= 1:
+                    return items[0] if items else ""
+                return ", ".join(items[:-1]) + " and " + items[-1]
+
+            has_audio = bool(msg.get("audio"))
+            if has_audio and sources:
+                content.append({"type": "text", "text": f"The user just spoke to you (audio) while also showing you {_join(sources)}. Respond to what they said, referencing what you see if relevant."})
+            elif has_audio:
                 content.append({"type": "text", "text": "The user just spoke to you. Respond to what they said."})
-            elif msg.get("image"):
-                content.append({"type": "text", "text": "The user is showing you their camera. Describe what you see."})
+            elif sources:
+                content.append({"type": "text", "text": f"The user is showing you {_join(sources)}. Describe what you see."})
             else:
                 content.append({"type": "text", "text": msg.get("text", "Hello!")})
 

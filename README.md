@@ -39,15 +39,22 @@ Browser (playback + transcript)
 ## Requirements
 
 - Python 3.12+
+- Node.js 20+ (for the Next.js frontend)
 - macOS with Apple Silicon, or Linux with a supported GPU
 - ~3 GB free RAM for the model
 
 ## Quick start
 
+Parlor has two pieces: a **FastAPI** backend (`src/`) and a **Next.js** frontend (`web/`). In development you run both — Next proxies `/ws` to FastAPI so the browser talks to a single origin.
+
 ```bash
 git clone https://github.com/fikrikarim/parlor.git
 cd parlor
+```
 
+**Terminal 1 — backend:**
+
+```bash
 # Install uv if you don't have it
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
@@ -56,16 +63,36 @@ uv sync
 uv run server.py
 ```
 
-Open [http://localhost:8000](http://localhost:8000), grant camera and microphone access, and start talking.
+**Terminal 2 — frontend:**
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), grant camera and microphone access, and start talking.
 
 Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus TTS models).
 
+### How the dev proxy works
+
+`web/next.config.ts` declares a rewrite from `/ws` → `http://localhost:8000/ws`, so the browser opens `ws://localhost:3000/ws` and Next.js proxies the upgrade through to FastAPI. Override the backend target with `BACKEND_URL=http://host:port npm run dev` if you want to point at a different server.
+
 ## Configuration
+
+### Backend (`src/`)
 
 | Variable     | Default                        | Description                                    |
 | ------------ | ------------------------------ | ---------------------------------------------- |
 | `MODEL_PATH` | auto-download from HuggingFace | Path to a local `gemma-4-E2B-it.litertlm` file |
-| `PORT`       | `8000`                         | Server port                                    |
+| `PORT`       | `8000`                         | FastAPI port                                   |
+
+### Frontend (`web/`)
+
+| Variable      | Default                 | Description                             |
+| ------------- | ----------------------- | --------------------------------------- |
+| `BACKEND_URL` | `http://localhost:8000` | Target for the `/ws` proxy in dev/build |
 
 ## Performance (Apple M3 Pro)
 
@@ -81,14 +108,21 @@ Decode speed: ~83 tokens/sec on GPU (Apple M3 Pro).
 ## Project structure
 
 ```
-src/
-├── server.py              # FastAPI WebSocket server + Gemma 4 inference
-├── tts.py                 # Platform-aware TTS (MLX on Mac, ONNX on Linux)
-├── index.html             # Frontend UI (VAD, camera, audio playback)
-├── pyproject.toml         # Dependencies
-└── benchmarks/
-    ├── bench.py           # End-to-end WebSocket benchmark
-    └── benchmark_tts.py   # TTS backend comparison
+parlor/
+├── src/                       # Python backend
+│   ├── server.py              # FastAPI WebSocket server + Gemma 4 inference
+│   ├── tts.py                 # Platform-aware TTS (MLX on Mac, ONNX on Linux)
+│   ├── pyproject.toml         # Python dependencies
+│   └── benchmarks/
+│       ├── bench.py           # End-to-end WebSocket benchmark
+│       └── benchmark_tts.py   # TTS backend comparison
+└── web/                       # Next.js frontend (TypeScript + Tailwind + shadcn/ui)
+    ├── app/
+    │   ├── page.tsx           # Main UI — VAD, camera, audio playback
+    │   ├── layout.tsx
+    │   └── globals.css        # App styles + Tailwind tokens
+    ├── components/ui/         # shadcn/ui components
+    └── next.config.ts         # /ws rewrite → FastAPI
 ```
 
 ## Acknowledgments
