@@ -47,6 +47,8 @@ import {
   getSystemPrompt,
   getVoice,
   getWsUrl,
+  setSplitRatio,
+  useSplitRatio,
   useSystemPrompt,
   useWsUrl,
 } from "@/lib/settings";
@@ -146,13 +148,7 @@ export default function Home() {
   const [videoSending, setVideoSending] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [backendUnreachable, setBackendUnreachable] = useState(false);
-  const [splitRatio, setSplitRatio] = useState<number>(() => {
-    if (typeof window === "undefined") return 0.4;
-    const saved = Number(window.localStorage.getItem("parlor.splitRatio"));
-    return Number.isFinite(saved) && saved >= 0.2 && saved <= 0.75
-      ? saved
-      : 0.4;
-  });
+  const splitRatio = useSplitRatio();
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -653,6 +649,16 @@ export default function Home() {
   );
 
   const connectWs = useCallback(() => {
+    // Skip if we already have a live socket.
+    const existing = wsRef.current;
+    if (
+      existing &&
+      (existing.readyState === WebSocket.CONNECTING ||
+        existing.readyState === WebSocket.OPEN)
+    ) {
+      return;
+    }
+
     const ws = new WebSocket(getWsUrl());
     wsRef.current = ws;
 
@@ -739,9 +745,6 @@ export default function Home() {
     connectWsRef.current = connectWs;
   }, [connectWs]);
 
-  useEffect(() => {
-    window.localStorage.setItem("parlor.splitRatio", String(splitRatio));
-  }, [splitRatio]);
 
   // Keep latest locale reachable from memoized handlers so server-side
   // Supertonic speaks in whatever language the UI is set to, even after
@@ -836,57 +839,65 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
+    // Defer init so React Strict Mode's setup→cleanup→setup cycle
+    // can cancel the first pass before any async work starts.
+    wsShouldReconnectRef.current = true;
+
     initWaveformCanvas();
     const onResize = () => initWaveformCanvas();
     window.addEventListener("resize", onResize);
 
     updateStateVars("loading");
 
-    (async () => {
-      await startCamera();
+    const initTimer = window.setTimeout(() => {
       if (cancelled) return;
+      (async () => {
+        await startCamera();
+        if (cancelled) return;
 
-      connectWs();
+        connectWs();
 
-      const { MicVAD } = await import("@ricky0123/vad-web");
-      if (cancelled) return;
+        const { MicVAD } = await import("@ricky0123/vad-web");
+        if (cancelled) return;
 
-      myvadRef.current = await MicVAD.new({
-        getStream: async () =>
-          new MediaStream(cameraStreamRef.current!.getAudioTracks()),
-        positiveSpeechThreshold: 0.5,
-        negativeSpeechThreshold: 0.25,
-        redemptionMs: 600,
-        minSpeechMs: 300,
-        preSpeechPadMs: 300,
-        onSpeechStart: handleSpeechStart,
-        onSpeechEnd: handleSpeechEnd,
-        onVADMisfire: () => console.log("VAD misfire (too short)"),
-        onnxWASMBasePath: ONNX_WASM_BASE_PATH,
-        baseAssetPath: VAD_BASE_ASSET_PATH,
-      });
-      if (cancelled) return;
+        myvadRef.current = await MicVAD.new({
+          getStream: async () =>
+            new MediaStream(cameraStreamRef.current!.getAudioTracks()),
+          positiveSpeechThreshold: 0.5,
+          negativeSpeechThreshold: 0.25,
+          redemptionMs: 600,
+          minSpeechMs: 300,
+          preSpeechPadMs: 300,
+          onSpeechStart: handleSpeechStart,
+          onSpeechEnd: handleSpeechEnd,
+          onVADMisfire: () => console.log("VAD misfire (too short)"),
+          onnxWASMBasePath: ONNX_WASM_BASE_PATH,
+          baseAssetPath: VAD_BASE_ASSET_PATH,
+        });
+        if (cancelled) return;
 
-      myvadRef.current.start();
+        myvadRef.current.start();
 
-      const initAudio = () => {
+        const initAudio = () => {
+          ensureAudioCtx();
+          const ctx = audioCtxRef.current;
+          if (ctx?.state === "suspended") ctx.resume();
+          document.removeEventListener("click", initAudio);
+          document.removeEventListener("keydown", initAudio);
+        };
+        document.addEventListener("click", initAudio);
+        document.addEventListener("keydown", initAudio);
         ensureAudioCtx();
-        const ctx = audioCtxRef.current;
-        if (ctx?.state === "suspended") ctx.resume();
-        document.removeEventListener("click", initAudio);
-        document.removeEventListener("keydown", initAudio);
-      };
-      document.addEventListener("click", initAudio);
-      document.addEventListener("keydown", initAudio);
-      ensureAudioCtx();
 
-      setMachineState("listening");
-      startWaveformLoop();
-      console.log("VAD initialized and listening");
-    })().catch((e) => console.error("Init error:", e));
+        setMachineState("listening");
+        startWaveformLoop();
+        console.log("VAD initialized and listening");
+      })().catch((e) => console.error("Init error:", e));
+    }, 50);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(initTimer);
       wsShouldReconnectRef.current = false;
       window.removeEventListener("resize", onResize);
       if (waveformRAFRef.current) cancelAnimationFrame(waveformRAFRef.current);

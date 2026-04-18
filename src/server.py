@@ -6,6 +6,7 @@ import json
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -41,11 +42,31 @@ SYSTEM_PROMPT = (
 SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+')
 
 engine = None
+conversation = None
 tts_backend = None
+# Shared across the global conversation; cleared before each send.
+tool_result: dict = {}
+
+# Pin each framework to one thread: serialises non-thread-safe
+# litert-lm calls and keeps Gemma/Supertonic Metal contexts apart.
+_llm_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="parlor-llm")
+_tts_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="parlor-tts")
 
 
-def load_models():
-    global engine, tts_backend
+def _respond_to_user(transcription: str, response: str) -> str:
+    """Respond to the user's voice message.
+
+    Args:
+        transcription: Exact transcription of what the user said in the audio.
+        response: Your conversational response to the user. Keep it to 1-4 short sentences.
+    """
+    tool_result["transcription"] = transcription
+    tool_result["response"] = response
+    return "OK"
+
+
+def _load_engine() -> None:
+    global engine
     print(f"Loading Gemma 4 E2B from {MODEL_PATH}...")
     engine = litert_lm.Engine(
         MODEL_PATH,
@@ -56,13 +77,50 @@ def load_models():
     engine.__enter__()
     print("Engine loaded.")
 
+
+def _load_tts() -> None:
+    global tts_backend
     tts_backend = tts.load()
+
+
+def _ensure_conversation(lang: str) -> None:
+    """Lazy-create the engine-wide conversation on the first turn.
+
+    `extra_context.language` is only honoured if the model's chat
+    template references it — the per-turn text prefix is the real
+    language steering.
+    """
+    global conversation
+    if conversation is not None:
+        return
+    hint = (lang or "en").strip().lower() or "en"
+    conversation = engine.create_conversation(
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}],
+        tools=[_respond_to_user],
+        extra_context={"language": hint},
+    )
+    conversation.__enter__()
+    print(f"Conversation started (language hint = {hint!r}).")
+
+
+def _llm_turn(content: list, lang: str) -> dict:
+    """One queued LLM turn: ensure conversation, clear tool_result, send."""
+    _ensure_conversation(lang)
+    tool_result.clear()
+    return conversation.send_message({"role": "user", "content": content})
 
 
 @asynccontextmanager
 async def lifespan(app):
-    await asyncio.get_event_loop().run_in_executor(None, load_models)
-    yield
+    loop = asyncio.get_event_loop()
+    # Load each framework on the thread that will own it.
+    await loop.run_in_executor(_llm_executor, _load_engine)
+    await loop.run_in_executor(_tts_executor, _load_tts)
+    try:
+        yield
+    finally:
+        _llm_executor.shutdown(wait=False)
+        _tts_executor.shutdown(wait=False)
 
 
 app = FastAPI(lifespan=lifespan)
@@ -82,51 +140,6 @@ async def root():
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
-
-    # Per-connection tool state captured via closure
-    tool_result = {}
-
-    def respond_to_user(transcription: str, response: str) -> str:
-        """Respond to the user's voice message.
-
-        Args:
-            transcription: Exact transcription of what the user said in the audio.
-            response: Your conversational response to the user. Keep it to 1-4 short sentences.
-        """
-        tool_result["transcription"] = transcription
-        tool_result["response"] = response
-        return "OK"
-
-    # Conversation is created lazily on the first inbound message so we
-    # can use the client-supplied system prompt. litert-lm only supports
-    # one session per engine and can't be torn down+recreated mid-
-    # connection — if the client edits the prompt, it closes+reopens the
-    # WebSocket to get a fresh conversation.
-    conversation = None
-    current_system_prompt = SYSTEM_PROMPT
-
-    def ensure_conversation(system_prompt: str) -> bool:
-        """Create the conversation if it doesn't exist yet. Returns True
-        on first creation. If a session already exists and the requested
-        prompt differs, we log a note but keep the existing conversation
-        (the frontend is expected to reconnect on prompt change)."""
-        nonlocal conversation, current_system_prompt
-        resolved = (system_prompt or "").strip() or SYSTEM_PROMPT
-        if conversation is None:
-            current_system_prompt = resolved
-            conversation = engine.create_conversation(
-                messages=[{"role": "system", "content": current_system_prompt}],
-                tools=[respond_to_user],
-            )
-            conversation.__enter__()
-            print(f"Conversation started ({len(current_system_prompt)} chars).")
-            return True
-        if resolved != current_system_prompt:
-            print(
-                "System prompt changed mid-session — ignored. "
-                "Reconnect to apply the new prompt."
-            )
-        return False
 
     interrupted = asyncio.Event()
     msg_queue = asyncio.Queue()
@@ -160,9 +173,9 @@ async def websocket_endpoint(ws: WebSocket):
             # Optional voice preset. Empty / unknown → backend's default.
             voice = (msg.get("voice") or "").strip() or None
 
-            # Lazy-create (or log mismatch for) the conversation based on
-            # the client-supplied system prompt.
-            ensure_conversation(msg.get("system_prompt") or "")
+            # Prepended to this turn since we can't swap the real
+            # system message after conversation creation.
+            system_override = (msg.get("system_prompt") or "").strip()
 
             # Accept images as a list of {source, blob} items. Fall back to
             # the legacy single `image` field so the static index.html UI
@@ -217,11 +230,16 @@ async def websocket_endpoint(ws: WebSocket):
             if lang in lang_names and lang != "en":
                 content[-1]["text"] += f" You MUST respond in {lang_names[lang]}."
 
-            # LLM inference
+            if system_override:
+                content[-1]["text"] = (
+                    f"[Instructions for this conversation: {system_override}]\n\n"
+                    + content[-1]["text"]
+                )
+
+            # LLM inference (serialised on the LLM worker).
             t0 = time.time()
-            tool_result.clear()
             response = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: conversation.send_message({"role": "user", "content": content})
+                _llm_executor, _llm_turn, content, lang
             )
             llm_time = time.time() - t0
 
@@ -268,9 +286,9 @@ async def websocket_endpoint(ws: WebSocket):
                     print(f"Interrupted during TTS (sentence {i+1}/{len(sentences)})")
                     break
 
-                # Generate audio for this sentence
+                # TTS on the pinned worker (avoids Metal overlap with LLM).
                 pcm = await asyncio.get_event_loop().run_in_executor(
-                    None,
+                    _tts_executor,
                     lambda s=sentence: tts_backend.generate(
                         s, voice=voice, lang=lang
                     ),
@@ -300,11 +318,6 @@ async def websocket_endpoint(ws: WebSocket):
         print("Client disconnected")
     finally:
         recv_task.cancel()
-        if conversation is not None:
-            try:
-                conversation.__exit__(None, None, None)
-            except Exception:
-                pass
 
 
 if __name__ == "__main__":

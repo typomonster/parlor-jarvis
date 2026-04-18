@@ -5,6 +5,10 @@ import { useSyncExternalStore } from "react";
 const WS_URL_KEY = "parlor.wsUrl";
 const SYSTEM_PROMPT_KEY = "parlor.systemPrompt";
 const VOICE_KEY = "parlor.voice";
+const SPLIT_RATIO_KEY = "parlor.splitRatio";
+const SPLIT_RATIO_DEFAULT = 0.4;
+const SPLIT_RATIO_MIN = 0.2;
+const SPLIT_RATIO_MAX = 0.75;
 
 // Module-level store for user-configurable settings, same pattern as i18n.
 let currentWsUrl: string | null = null;
@@ -157,4 +161,50 @@ export function setVoice(value: string) {
 
 export function useVoice(): string {
   return useSyncExternalStore(subscribeVoice, getVoiceSnapshot, () => "");
+}
+
+// Chat / sources column split ratio. SSR returns the default so the
+// localStorage-backed client value doesn't trip a hydration mismatch.
+
+let currentSplitRatio: number | null = null;
+const splitListeners = new Set<() => void>();
+
+function clampRatio(v: number): number {
+  if (!Number.isFinite(v)) return SPLIT_RATIO_DEFAULT;
+  return Math.min(SPLIT_RATIO_MAX, Math.max(SPLIT_RATIO_MIN, v));
+}
+
+function readInitialSplitRatio(): number {
+  if (typeof window === "undefined") return SPLIT_RATIO_DEFAULT;
+  const raw = window.localStorage.getItem(SPLIT_RATIO_KEY);
+  if (raw === null) return SPLIT_RATIO_DEFAULT;
+  return clampRatio(Number(raw));
+}
+
+function getSplitRatioSnapshot(): number {
+  if (currentSplitRatio === null) currentSplitRatio = readInitialSplitRatio();
+  return currentSplitRatio;
+}
+
+function subscribeSplitRatio(cb: () => void) {
+  splitListeners.add(cb);
+  return () => {
+    splitListeners.delete(cb);
+  };
+}
+
+export function setSplitRatio(v: number) {
+  currentSplitRatio = clampRatio(v);
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(SPLIT_RATIO_KEY, String(currentSplitRatio));
+  }
+  for (const cb of splitListeners) cb();
+}
+
+export function useSplitRatio(): number {
+  return useSyncExternalStore(
+    subscribeSplitRatio,
+    getSplitRatioSnapshot,
+    () => SPLIT_RATIO_DEFAULT,
+  );
 }
