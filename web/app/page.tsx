@@ -30,12 +30,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { FileUploadSkeleton } from "@/components/file-upload-skeleton";
+import { SplitDivider } from "@/components/split-divider";
 import { LanguageSelector } from "@/components/language-selector";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { SystemPromptEditor } from "@/components/system-prompt-editor";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { VoiceSelector } from "@/components/voice-selector";
 import { useI18n } from "@/lib/i18n/provider";
-import { getWsUrl, useWsUrl } from "@/lib/settings";
+import {
+  getSystemPrompt,
+  getVoice,
+  getWsUrl,
+  useSystemPrompt,
+  useWsUrl,
+} from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 type MachineState = "loading" | "listening" | "processing" | "speaking";
@@ -48,7 +62,7 @@ type Message =
       role: "user";
       pending: boolean;
       text: string;
-      withCamera: boolean;
+      sources: ImageSource[];
     }
   | {
       id: number;
@@ -113,8 +127,9 @@ function float32ToWavBase64(samples: Float32Array): string {
 }
 
 export default function Home() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const activeWsUrl = useWsUrl();
+  const activeSystemPrompt = useSystemPrompt();
   const [machineState, setMachineStateRender] =
     useState<MachineState>("loading");
   const [connection, setConnection] =
@@ -131,12 +146,20 @@ export default function Home() {
   const [videoSending, setVideoSending] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [backendUnreachable, setBackendUnreachable] = useState(false);
+  const [splitRatio, setSplitRatio] = useState<number>(() => {
+    if (typeof window === "undefined") return 0.4;
+    const saved = Number(window.localStorage.getItem("parlor.splitRatio"));
+    return Number.isFinite(saved) && saved >= 0.2 && saved <= 0.75
+      ? saved
+      : 0.4;
+  });
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoFileElRef = useRef<HTMLVideoElement | null>(null);
   const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
   const transcriptRef = useRef<HTMLDivElement | null>(null);
 
   const machineStateRef = useRef<MachineState>("loading");
@@ -165,6 +188,7 @@ export default function Home() {
   const waveformRAFRef = useRef<number | null>(null);
   const ambientPhaseRef = useRef(0);
   const msgIdRef = useRef(0);
+  const localeRef = useRef<string>(locale);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const myvadRef = useRef<any>(null);
   const connectWsRef = useRef<() => void>(() => {});
@@ -584,6 +608,12 @@ export default function Home() {
 
       setMachineState("processing");
       setConnection("processing");
+      const usedSources: ImageSource[] = [];
+      if (imageBase64) usedSources.push("camera");
+      if (screenBase64) usedSources.push("screen");
+      if (pdfBase64) usedSources.push("pdf");
+      if (videoBase64) usedSources.push("video");
+
       setMessages((prev) => [
         ...prev,
         {
@@ -591,7 +621,7 @@ export default function Home() {
           role: "user",
           pending: true,
           text: "",
-          withCamera: !!imageBase64,
+          sources: usedSources,
         },
       ]);
 
@@ -603,7 +633,15 @@ export default function Home() {
       if (pdfBase64) images.push({ source: "pdf", blob: pdfBase64 });
       if (videoBase64) images.push({ source: "video", blob: videoBase64 });
 
-      ws.send(JSON.stringify({ audio: wavBase64, images }));
+      ws.send(
+        JSON.stringify({
+          audio: wavBase64,
+          images,
+          lang: localeRef.current,
+          voice: getVoice(),
+          system_prompt: getSystemPrompt(),
+        }),
+      );
     },
     [
       captureCameraFrame,
@@ -701,6 +739,17 @@ export default function Home() {
     connectWsRef.current = connectWs;
   }, [connectWs]);
 
+  useEffect(() => {
+    window.localStorage.setItem("parlor.splitRatio", String(splitRatio));
+  }, [splitRatio]);
+
+  // Keep latest locale reachable from memoized handlers so server-side
+  // Supertonic speaks in whatever language the UI is set to, even after
+  // VAD's onSpeechEnd closure was created.
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
+
   // Reconnect when the user changes the WebSocket URL in Settings.
   // Skip the first render — the mount effect handles the initial connect.
   const prevWsUrlRef = useRef<string | null>(null);
@@ -721,6 +770,23 @@ export default function Home() {
       wsRef.current?.close();
     } catch {}
   }, [activeWsUrl]);
+
+  // litert-lm only supports one conversation per WS connection, so when
+  // the user edits the system prompt we close the socket — the existing
+  // auto-reconnect loop reopens it and the first message on the new
+  // connection carries the new prompt into conversation creation.
+  const prevSystemPromptRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevSystemPromptRef.current === null) {
+      prevSystemPromptRef.current = activeSystemPrompt;
+      return;
+    }
+    if (prevSystemPromptRef.current === activeSystemPrompt) return;
+    prevSystemPromptRef.current = activeSystemPrompt;
+    try {
+      wsRef.current?.close();
+    } catch {}
+  }, [activeSystemPrompt]);
 
   const startCamera = useCallback(async (): Promise<void> => {
     try {
@@ -932,6 +998,7 @@ export default function Home() {
         <div className="parlor-navbar-center">
           <span className="parlor-model-label">Gemma 4 E2B</span>
           <LanguageSelector />
+          <VoiceSelector />
         </div>
 
         <div className="parlor-navbar-right">
@@ -973,9 +1040,18 @@ export default function Home() {
         </div>
       ) : null}
 
-      <main className="parlor-main">
+      <main
+        ref={mainRef}
+        className="parlor-main"
+        style={{
+          gridTemplateColumns: `minmax(0, ${splitRatio}fr) auto minmax(0, ${
+            1 - splitRatio
+          }fr)`,
+        }}
+      >
         {/* Left column — AI conversation */}
         <section className="parlor-chat-column">
+          <SystemPromptEditor />
           <div ref={transcriptRef} className="transcript-wrap">
             <ScrollArea className="transcript-scroll-area">
               <div className="transcript-content">
@@ -991,8 +1067,12 @@ export default function Home() {
                       ) : (
                         m.text
                       )}
-                      {m.withCamera ? (
-                        <div className="meta">{t("withCamera")}</div>
+                      {m.sources.length > 0 ? (
+                        <div className="meta">
+                          {m.sources
+                            .map((s) => t(`with.${s}`))
+                            .join(" · ")}
+                        </div>
                       ) : null}
                     </div>
                   ) : (
@@ -1018,13 +1098,22 @@ export default function Home() {
               <canvas ref={waveformCanvasRef} className="state-wave" />
             </div>
             <div className="parlor-chat-footer-right">
-              <Badge
-                variant="outline"
-                className="h-auto gap-1.5 border-border/50 bg-transparent px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-foreground/50"
-              >
-                <Lock className="size-2.5" strokeWidth={1.5} />
-                {t("onDevice")}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Badge
+                      variant="outline"
+                      className="h-auto cursor-help gap-1.5 border-border/50 bg-transparent px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-foreground/50"
+                    >
+                      <Lock className="size-2.5" strokeWidth={1.5} />
+                      {t("onDevice")}
+                    </Badge>
+                  }
+                />
+                <TooltipContent className="max-w-[240px] text-xs leading-snug">
+                  {t("onDevice.tooltip")}
+                </TooltipContent>
+              </Tooltip>
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -1044,6 +1133,12 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <SplitDivider
+          ratio={splitRatio}
+          onChange={setSplitRatio}
+          containerRef={mainRef}
+        />
 
         {/* Right column — 2×2 sources grid */}
         <section className="parlor-sources-grid">

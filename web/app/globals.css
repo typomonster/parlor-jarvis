@@ -242,8 +242,11 @@
   flex: 1;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(340px, 2fr) minmax(520px, 3fr);
-  gap: 16px;
+  /* Three tracks: [chat] [divider] [sources]. The chat/sources tracks
+     use `fr` units driven by React state so the divider can resize
+     them live. Defaults come from the inline style on <main>. */
+  grid-template-columns: minmax(0, 2fr) auto minmax(0, 3fr);
+  gap: 0;
   padding: 16px 20px 20px;
   z-index: 1;
   min-height: 0;
@@ -251,20 +254,56 @@
 
 @media (max-width: 960px) {
   .parlor-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     grid-auto-rows: minmax(0, auto);
+    gap: 12px;
   }
+  .parlor-split-divider {
+    display: none;
+  }
+}
+
+.parlor-split-divider {
+  position: relative;
+  width: 10px;
+  margin: 0 2px;
+  cursor: col-resize;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.parlor-split-divider::before {
+  content: "";
+  width: 2px;
+  height: 36px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--c-text-dim) 25%, transparent);
+  transition: background 0.15s ease, height 0.15s ease;
+}
+
+.parlor-split-divider:hover::before,
+.parlor-split-divider:focus-visible::before {
+  background: color-mix(in oklab, var(--c-text-dim) 55%, transparent);
+  height: 56px;
+}
+
+.parlor-split-divider:focus-visible {
+  outline: none;
 }
 
 .parlor-chat-column {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 12px;
-  padding: 16px;
+  gap: 0;
+  padding: 0;
   border-radius: 16px;
   background: var(--c-surface);
   border: 1px solid color-mix(in oklab, var(--c-text-dim) 15%, transparent);
+  overflow: hidden;
 }
 
 .parlor-sources-grid {
@@ -275,12 +314,34 @@
   min-height: 0;
 }
 
+/* System-prompt editor — header-style strip at the top of the chat
+   column. Tinted background separates it from the transcript body. */
+.parlor-system-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 10px;
+  background: color-mix(in oklab, var(--c-text-dim) 7%, transparent);
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--c-text-dim) 14%, transparent);
+  flex-shrink: 0;
+}
+
+.parlor-system-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .parlor-chat-footer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in oklab, var(--c-text-dim) 12%, transparent);
+  padding: 10px 14px;
+  background: color-mix(in oklab, var(--c-text-dim) 7%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--c-text-dim) 14%, transparent);
+  flex-shrink: 0;
 }
 
 .parlor-chat-footer .state-indicator {
@@ -563,6 +624,7 @@
   flex: 1;
   min-height: 0;
   display: flex;
+  padding: 12px 14px;
   mask-image: linear-gradient(to bottom, transparent 0%, black 12px, black 100%);
   -webkit-mask-image: linear-gradient(
     to bottom,

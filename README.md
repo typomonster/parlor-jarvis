@@ -83,10 +83,45 @@ Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus 
 
 ### Backend (`src/`)
 
-| Variable     | Default                        | Description                                    |
-| ------------ | ------------------------------ | ---------------------------------------------- |
-| `MODEL_PATH` | auto-download from HuggingFace | Path to a local `gemma-4-E2B-it.litertlm` file |
-| `PORT`       | `8000`                         | FastAPI port                                   |
+| Variable           | Default                                    | Description                                                               |
+| ------------------ | ------------------------------------------ | ------------------------------------------------------------------------- |
+| `MODEL_PATH`       | auto-download from HuggingFace             | Path to a local `gemma-4-*.litertlm` file                                 |
+| `HF_REPO`          | `litert-community/gemma-4-E2B-it-litert-lm`| HuggingFace repo to pull the model from                                   |
+| `HF_FILENAME`      | `gemma-4-E2B-it.litertlm`                  | File within `HF_REPO` to download                                         |
+| `PORT`             | `8000`                                     | FastAPI port                                                              |
+| `TTS_ENGINE`       | `supertonic`                               | `supertonic` (multilingual — en/ko/es/pt/fr) or `kokoro` (English, faster) |
+| `KOKORO_ONNX`      | unset                                      | Force the Kokoro ONNX backend on Apple Silicon                            |
+| `SUPERTONIC_ONNX`  | unset                                      | Force the Supertonic ONNX backend on Apple Silicon                        |
+| `SUPERTONIC_MLX_REPO`  | `typomonster/supertonic-2-mlx`         | HF repo for the Supertonic MLX checkpoint                                 |
+| `SUPERTONIC_ONNX_REPO` | `Supertone/supertonic-2`               | HF repo for the Supertonic ONNX checkpoint                                |
+
+#### TTS engines
+
+Parlor ships with two interchangeable TTS backends, selected at runtime via `TTS_ENGINE`:
+
+| Engine                | Languages                    | Apple Silicon               | Linux / x86             |
+| --------------------- | ---------------------------- | --------------------------- | ----------------------- |
+| `supertonic` (default)| `en`, `ko`, `es`, `pt`, `fr` | `mlx-audio` fork[^st] (MLX) | Supertonic ONNX Runtime |
+| `kokoro`              | English only                 | `mlx-audio` (MLX)           | `kokoro-onnx`           |
+
+Force ONNX instead of MLX on macOS with `SUPERTONIC_ONNX=1` or `KOKORO_ONNX=1`. Language is selected automatically from the frontend's active locale (Supertonic only — Kokoro ignores it). Set `TTS_ENGINE=kokoro` if you want the lighter English-only engine.
+
+[^st]: `mlx-audio @ git+https://github.com/typomonster/mlx-audio` — the Supertonic-MLX support is pinned to this fork until it's upstreamed.
+
+#### Supported models
+
+| Model                                             | `HF_REPO`                                     | `HF_FILENAME`               |
+| ------------------------------------------------- | --------------------------------------------- | --------------------------- |
+| **Gemma 4 E2B** _(default — ~3 GB, fastest)_      | `litert-community/gemma-4-E2B-it-litert-lm`   | `gemma-4-E2B-it.litertlm`   |
+| **Gemma 4 E4B** _(larger, higher quality)_        | `litert-community/gemma-4-E4B-it-litert-lm`   | `gemma-4-E4B-it.litertlm`   |
+
+Switch models by setting both env vars, e.g.:
+
+```bash
+HF_REPO=litert-community/gemma-4-E4B-it-litert-lm \
+HF_FILENAME=gemma-4-E4B-it.litertlm \
+uv run server.py
+```
 
 ### Frontend (`web/`)
 

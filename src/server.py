@@ -17,8 +17,8 @@ from fastapi.responses import HTMLResponse
 
 import tts
 
-HF_REPO = "litert-community/gemma-4-E2B-it-litert-lm"
-HF_FILENAME = "gemma-4-E2B-it.litertlm"
+HF_REPO = os.environ.get("HF_REPO", "litert-community/gemma-4-E2B-it-litert-lm")
+HF_FILENAME = os.environ.get("HF_FILENAME", "gemma-4-E2B-it.litertlm")
 
 
 def resolve_model_path() -> str:
@@ -97,11 +97,36 @@ async def websocket_endpoint(ws: WebSocket):
         tool_result["response"] = response
         return "OK"
 
-    conversation = engine.create_conversation(
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}],
-        tools=[respond_to_user],
-    )
-    conversation.__enter__()
+    # Conversation is created lazily on the first inbound message so we
+    # can use the client-supplied system prompt. litert-lm only supports
+    # one session per engine and can't be torn down+recreated mid-
+    # connection — if the client edits the prompt, it closes+reopens the
+    # WebSocket to get a fresh conversation.
+    conversation = None
+    current_system_prompt = SYSTEM_PROMPT
+
+    def ensure_conversation(system_prompt: str) -> bool:
+        """Create the conversation if it doesn't exist yet. Returns True
+        on first creation. If a session already exists and the requested
+        prompt differs, we log a note but keep the existing conversation
+        (the frontend is expected to reconnect on prompt change)."""
+        nonlocal conversation, current_system_prompt
+        resolved = (system_prompt or "").strip() or SYSTEM_PROMPT
+        if conversation is None:
+            current_system_prompt = resolved
+            conversation = engine.create_conversation(
+                messages=[{"role": "system", "content": current_system_prompt}],
+                tools=[respond_to_user],
+            )
+            conversation.__enter__()
+            print(f"Conversation started ({len(current_system_prompt)} chars).")
+            return True
+        if resolved != current_system_prompt:
+            print(
+                "System prompt changed mid-session — ignored. "
+                "Reconnect to apply the new prompt."
+            )
+        return False
 
     interrupted = asyncio.Event()
     msg_queue = asyncio.Queue()
@@ -129,6 +154,15 @@ async def websocket_endpoint(ws: WebSocket):
                 break
 
             interrupted.clear()
+
+            # Optional language hint — Supertonic uses it; Kokoro ignores it.
+            lang = (msg.get("lang") or "en").lower()
+            # Optional voice preset. Empty / unknown → backend's default.
+            voice = (msg.get("voice") or "").strip() or None
+
+            # Lazy-create (or log mismatch for) the conversation based on
+            # the client-supplied system prompt.
+            ensure_conversation(msg.get("system_prompt") or "")
 
             # Accept images as a list of {source, blob} items. Fall back to
             # the legacy single `image` field so the static index.html UI
@@ -169,6 +203,19 @@ async def websocket_endpoint(ws: WebSocket):
                 content.append({"type": "text", "text": f"The user is showing you {_join(sources)}. Describe what you see."})
             else:
                 content.append({"type": "text", "text": msg.get("text", "Hello!")})
+
+            # Steer Gemma to respond in the user's selected language so the
+            # downstream TTS (which is already told the language via `lang`)
+            # is actually speaking matching words.
+            lang_names = {
+                "en": "English",
+                "ko": "Korean",
+                "es": "Spanish",
+                "pt": "Portuguese",
+                "fr": "French",
+            }
+            if lang in lang_names and lang != "en":
+                content[-1]["text"] += f" You MUST respond in {lang_names[lang]}."
 
             # LLM inference
             t0 = time.time()
@@ -223,7 +270,10 @@ async def websocket_endpoint(ws: WebSocket):
 
                 # Generate audio for this sentence
                 pcm = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda s=sentence: tts_backend.generate(s)
+                    None,
+                    lambda s=sentence: tts_backend.generate(
+                        s, voice=voice, lang=lang
+                    ),
                 )
 
                 if interrupted.is_set():
@@ -250,7 +300,11 @@ async def websocket_endpoint(ws: WebSocket):
         print("Client disconnected")
     finally:
         recv_task.cancel()
-        conversation.__exit__(None, None, None)
+        if conversation is not None:
+            try:
+                conversation.__exit__(None, None, None)
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Noto_Sans_KR, Syne } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/lib/i18n/provider";
 import "./globals.css";
 
@@ -46,8 +48,11 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </I18nProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

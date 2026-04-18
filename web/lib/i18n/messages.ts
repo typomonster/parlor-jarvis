@@ -45,7 +45,12 @@ export const MESSAGES: Record<Locale, Dict> = {
     "pdf.next": "Next page",
     "file.remove": "Remove file",
     onDevice: "On-device",
-    withCamera: "with camera",
+    "with.camera": "with camera",
+    "with.screen": "with screen",
+    "with.pdf": "with PDF",
+    "with.video": "with video",
+    "onDevice.tooltip":
+      "All inference runs on this machine. No audio, video, or text is sent to any external service.",
     "backendError.title": "Backend unreachable",
     "backendError.body":
       "Can't reach the backend through {url}. Make sure the FastAPI server is running (`cd src && uv run server.py`) and that `BACKEND_URL` in `web/next.config.ts` points at it.",
@@ -54,6 +59,14 @@ export const MESSAGES: Record<Locale, Dict> = {
     "theme.dark": "Dark",
     "theme.system": "System",
     "language.label": "Language",
+    "voice.label": "Voice",
+    "voice.default": "Default",
+    "voice.male": "Male",
+    "voice.female": "Female",
+    "systemPrompt.label": "System prompt",
+    "systemPrompt.placeholder":
+      "Leave empty to use the default assistant. Override to change persona or instructions.",
+    "systemPrompt.reset": "Reset",
     "settings.open": "Settings",
     "settings.title": "Settings",
     "settings.description":
@@ -98,7 +111,12 @@ export const MESSAGES: Record<Locale, Dict> = {
     "pdf.next": "다음 페이지",
     "file.remove": "파일 제거",
     onDevice: "온디바이스",
-    withCamera: "카메라 포함",
+    "with.camera": "카메라 포함",
+    "with.screen": "화면 포함",
+    "with.pdf": "PDF 포함",
+    "with.video": "동영상 포함",
+    "onDevice.tooltip":
+      "모든 추론이 이 기기에서 실행됩니다. 음성·영상·텍스트가 외부로 전송되지 않습니다.",
     "backendError.title": "백엔드에 연결할 수 없음",
     "backendError.body":
       "{url}을(를) 통해 백엔드에 연결할 수 없습니다. FastAPI 서버가 실행 중인지(`cd src && uv run server.py`), 그리고 `web/next.config.ts`의 `BACKEND_URL`이 올바른지 확인하세요.",
@@ -107,6 +125,14 @@ export const MESSAGES: Record<Locale, Dict> = {
     "theme.dark": "다크",
     "theme.system": "시스템",
     "language.label": "언어",
+    "voice.label": "목소리",
+    "voice.default": "기본",
+    "voice.male": "남성",
+    "voice.female": "여성",
+    "systemPrompt.label": "시스템 프롬프트",
+    "systemPrompt.placeholder":
+      "비워 두면 기본 어시스턴트가 사용됩니다. 페르소나나 지침을 바꾸려면 입력하세요.",
+    "systemPrompt.reset": "초기화",
     "settings.open": "설정",
     "settings.title": "설정",
     "settings.description":
@@ -152,7 +178,12 @@ export const MESSAGES: Record<Locale, Dict> = {
     "pdf.next": "Página siguiente",
     "file.remove": "Quitar archivo",
     onDevice: "En dispositivo",
-    withCamera: "con cámara",
+    "with.camera": "con cámara",
+    "with.screen": "con pantalla",
+    "with.pdf": "con PDF",
+    "with.video": "con vídeo",
+    "onDevice.tooltip":
+      "Toda la inferencia se ejecuta en este equipo. No se envía audio, vídeo ni texto a ningún servicio externo.",
     "backendError.title": "Backend inaccesible",
     "backendError.body":
       "No se puede acceder al backend a través de {url}. Asegúrate de que el servidor FastAPI esté en ejecución (`cd src && uv run server.py`) y que `BACKEND_URL` en `web/next.config.ts` apunte a él.",
@@ -161,6 +192,14 @@ export const MESSAGES: Record<Locale, Dict> = {
     "theme.dark": "Oscuro",
     "theme.system": "Sistema",
     "language.label": "Idioma",
+    "voice.label": "Voz",
+    "voice.default": "Predeterminada",
+    "voice.male": "Masculina",
+    "voice.female": "Femenina",
+    "systemPrompt.label": "Prompt del sistema",
+    "systemPrompt.placeholder":
+      "Déjalo vacío para usar el asistente por defecto. Sobrescríbelo para cambiar persona o instrucciones.",
+    "systemPrompt.reset": "Restablecer",
     "settings.open": "Configuración",
     "settings.title": "Configuración",
     "settings.description":
@@ -206,7 +245,12 @@ export const MESSAGES: Record<Locale, Dict> = {
     "pdf.next": "Próxima página",
     "file.remove": "Remover arquivo",
     onDevice: "No dispositivo",
-    withCamera: "com câmera",
+    "with.camera": "com câmera",
+    "with.screen": "com tela",
+    "with.pdf": "com PDF",
+    "with.video": "com vídeo",
+    "onDevice.tooltip":
+      "Toda a inferência é executada neste dispositivo. Nenhum áudio, vídeo ou texto é enviado a serviços externos.",
     "backendError.title": "Backend inacessível",
     "backendError.body":
       "Não foi possível acessar o backend em {url}. Verifique se o servidor FastAPI está em execução (`cd src && uv run server.py`) e se `BACKEND_URL` em `web/next.config.ts` aponta para ele.",
@@ -215,6 +259,14 @@ export const MESSAGES: Record<Locale, Dict> = {
     "theme.dark": "Escuro",
     "theme.system": "Sistema",
     "language.label": "Idioma",
+    "voice.label": "Voz",
+    "voice.default": "Padrão",
+    "voice.male": "Masculina",
+    "voice.female": "Feminina",
+    "systemPrompt.label": "Prompt do sistema",
+    "systemPrompt.placeholder":
+      "Deixe em branco para usar o assistente padrão. Substitua para mudar a persona ou instruções.",
+    "systemPrompt.reset": "Redefinir",
     "settings.open": "Configurações",
     "settings.title": "Configurações",
     "settings.description":
@@ -260,7 +312,12 @@ export const MESSAGES: Record<Locale, Dict> = {
     "pdf.next": "Page suivante",
     "file.remove": "Retirer le fichier",
     onDevice: "Sur l'appareil",
-    withCamera: "avec caméra",
+    "with.camera": "avec caméra",
+    "with.screen": "avec écran",
+    "with.pdf": "avec PDF",
+    "with.video": "avec vidéo",
+    "onDevice.tooltip":
+      "Toute l'inférence s'exécute sur cette machine. Aucun audio, vidéo ou texte n'est envoyé à un service externe.",
     "backendError.title": "Backend inaccessible",
     "backendError.body":
       "Impossible d'atteindre le backend via {url}. Vérifiez que le serveur FastAPI est en cours d'exécution (`cd src && uv run server.py`) et que `BACKEND_URL` dans `web/next.config.ts` pointe vers lui.",
@@ -269,6 +326,14 @@ export const MESSAGES: Record<Locale, Dict> = {
     "theme.dark": "Sombre",
     "theme.system": "Système",
     "language.label": "Langue",
+    "voice.label": "Voix",
+    "voice.default": "Par défaut",
+    "voice.male": "Masculine",
+    "voice.female": "Féminine",
+    "systemPrompt.label": "Prompt système",
+    "systemPrompt.placeholder":
+      "Laissez vide pour utiliser l'assistant par défaut. Remplacez pour changer le persona ou les instructions.",
+    "systemPrompt.reset": "Réinitialiser",
     "settings.open": "Paramètres",
     "settings.title": "Paramètres",
     "settings.description":
