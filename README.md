@@ -85,9 +85,9 @@ Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus 
 
 | Variable           | Default                                    | Description                                                               |
 | ------------------ | ------------------------------------------ | ------------------------------------------------------------------------- |
-| `MODEL_PATH`       | auto-download from HuggingFace             | Path to a local `gemma-4-*.litertlm` file                                 |
-| `HF_REPO`          | `litert-community/gemma-4-E2B-it-litert-lm`| HuggingFace repo to pull the model from                                   |
-| `HF_FILENAME`      | `gemma-4-E2B-it.litertlm`                  | File within `HF_REPO` to download                                         |
+| `MODEL_PATH`       | auto-download from HuggingFace                       | Path to a local `.litertlm` file                                          |
+| `HF_REPO`          | `typomonster/supergemma4-e4b-abliterated-litert-lm`  | HuggingFace repo to pull the model from                                   |
+| `HF_FILENAME`      | `supergemma4-e4b-abliterated.litertlm`               | File within `HF_REPO` to download                                         |
 | `PORT`             | `8000`                                     | FastAPI port                                                              |
 | `TTS_ENGINE`       | `supertonic`                               | `supertonic` (multilingual — en/ko/es/pt/fr) or `kokoro` (English, faster) |
 | `KOKORO_ONNX`      | unset                                      | Force the Kokoro ONNX backend on Apple Silicon                            |
@@ -110,16 +110,17 @@ Force ONNX instead of MLX on macOS with `SUPERTONIC_ONNX=1` or `KOKORO_ONNX=1`. 
 
 #### Supported models
 
-| Model                                             | `HF_REPO`                                     | `HF_FILENAME`               |
-| ------------------------------------------------- | --------------------------------------------- | --------------------------- |
-| **Gemma 4 E2B** _(default — ~3 GB, fastest)_      | `litert-community/gemma-4-E2B-it-litert-lm`   | `gemma-4-E2B-it.litertlm`   |
-| **Gemma 4 E4B** _(larger, higher quality)_        | `litert-community/gemma-4-E4B-it-litert-lm`   | `gemma-4-E4B-it.litertlm`   |
+| Model                                                                      | `HF_REPO`                                             | `HF_FILENAME`                           |
+| -------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------- |
+| **Supergemma4-E4B (abliterated)** _(default — strong multilingual, Korean)_| `typomonster/supergemma4-e4b-abliterated-litert-lm`   | `supergemma4-e4b-abliterated.litertlm`  |
+| **Gemma 4 E2B** _(smallest, fastest)_                                      | `litert-community/gemma-4-E2B-it-litert-lm`           | `gemma-4-E2B-it.litertlm`               |
+| **Gemma 4 E4B** _(upstream base)_                                          | `litert-community/gemma-4-E4B-it-litert-lm`           | `gemma-4-E4B-it.litertlm`               |
 
 Switch models by setting both env vars, e.g.:
 
 ```bash
-HF_REPO=litert-community/gemma-4-E4B-it-litert-lm \
-HF_FILENAME=gemma-4-E4B-it.litertlm \
+HF_REPO=litert-community/gemma-4-E2B-it-litert-lm \
+HF_FILENAME=gemma-4-E2B-it.litertlm \
 uv run server.py
 ```
 

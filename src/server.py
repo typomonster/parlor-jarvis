@@ -18,8 +18,12 @@ from fastapi.responses import HTMLResponse
 
 import tts
 
-HF_REPO = os.environ.get("HF_REPO", "litert-community/gemma-4-E2B-it-litert-lm")
-HF_FILENAME = os.environ.get("HF_FILENAME", "gemma-4-E2B-it.litertlm")
+HF_REPO = os.environ.get(
+    "HF_REPO", "typomonster/supergemma4-e4b-abliterated-litert-lm"
+)
+HF_FILENAME = os.environ.get(
+    "HF_FILENAME", "supergemma4-e4b-abliterated.litertlm"
+)
 
 
 def resolve_model_path() -> str:
@@ -33,10 +37,19 @@ def resolve_model_path() -> str:
 
 MODEL_PATH = resolve_model_path()
 SYSTEM_PROMPT = (
-    "You are a friendly, conversational AI assistant. The user is talking to you "
-    "through a microphone and showing you their camera. "
-    "You MUST always use the respond_to_user tool to reply. "
-    "First transcribe exactly what the user said, then write your response."
+    "You are Jarvis, a helpful on-device voice assistant. The user speaks "
+    "to you through a microphone and may also share their camera, screen, "
+    "a PDF page, or a video frame. Listen carefully and reference specific "
+    "details from what you see and hear — concrete nouns, numbers, names, "
+    "what's on screen, what's in the camera frame. "
+    "Respond in a natural conversational tone that works as spoken audio. "
+    "Aim for 2-5 sentences per reply: long enough to be substantive, short "
+    "enough not to drone. Vary your phrasing across turns and never repeat a "
+    "previous answer verbatim. Avoid generic greetings or fillers unless the "
+    "user actually greeted you, and answer the user's question directly — "
+    "don't lecture or moralise. "
+    "You MUST always use the respond_to_user tool. Put an exact transcription "
+    "of the user's audio in `transcription` and your reply in `response`."
 )
 
 SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+')
@@ -46,6 +59,14 @@ conversation = None
 tts_backend = None
 # Shared across the global conversation; cleared before each send.
 tool_result: dict = {}
+# Last assistant reply — used to nudge the model away from byte-identical
+# repeats when the same or similar user prompt arrives twice in a row.
+last_reply: str = ""
+# Set by a client-side `{type: "reset"}` message. On the next user turn
+# we prepend a banner telling Gemma to disregard prior context and
+# clear repeat-breaker state. litert-lm won't let us tear down the
+# session for a hard reset, so this is a soft reset via prompting.
+pending_reset: bool = False
 
 # Pin each framework to one thread: serialises non-thread-safe
 # litert-lm calls and keeps Gemma/Supertonic Metal contexts apart.
@@ -58,7 +79,11 @@ def _respond_to_user(transcription: str, response: str) -> str:
 
     Args:
         transcription: Exact transcription of what the user said in the audio.
-        response: Your conversational response to the user. Keep it to 1-4 short sentences.
+        response: Your conversational reply (2-5 natural sentences).
+            Reference what you heard and saw concretely. Don't start with
+            generic greetings unless the user greeted you. Vary phrasing
+            across turns — never repeat a previous reply verbatim. Answer
+            directly without lecturing.
     """
     tool_result["transcription"] = transcription
     tool_result["response"] = response
@@ -67,7 +92,7 @@ def _respond_to_user(transcription: str, response: str) -> str:
 
 def _load_engine() -> None:
     global engine
-    print(f"Loading Gemma 4 E2B from {MODEL_PATH}...")
+    print(f"Loading model from {MODEL_PATH}...")
     engine = litert_lm.Engine(
         MODEL_PATH,
         backend=litert_lm.Backend.GPU,
@@ -139,6 +164,7 @@ async def root():
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    global last_reply, pending_reset
     await ws.accept()
 
     interrupted = asyncio.Event()
@@ -153,6 +179,11 @@ async def websocket_endpoint(ws: WebSocket):
                 if msg.get("type") == "interrupt":
                     interrupted.set()
                     print("Client interrupted")
+                elif msg.get("type") == "reset":
+                    global pending_reset, last_reply
+                    pending_reset = True
+                    last_reply = ""
+                    print("Client requested conversation reset.")
                 else:
                     await msg_queue.put(msg)
         except WebSocketDisconnect:
@@ -209,7 +240,7 @@ async def websocket_endpoint(ws: WebSocket):
 
             has_audio = bool(msg.get("audio"))
             if has_audio and sources:
-                content.append({"type": "text", "text": f"The user just spoke to you (audio) while also showing you {_join(sources)}. Respond to what they said, referencing what you see if relevant."})
+                content.append({"type": "text", "text": f"The user just spoke to you (audio). They are also sharing {_join(sources)}, but only reference the visual content if the user's question is actually about what they're showing — otherwise answer their question directly without commenting on the image."})
             elif has_audio:
                 content.append({"type": "text", "text": "The user just spoke to you. Respond to what they said."})
             elif sources:
@@ -229,6 +260,30 @@ async def websocket_endpoint(ws: WebSocket):
             }
             if lang in lang_names and lang != "en":
                 content[-1]["text"] += f" You MUST respond in {lang_names[lang]}."
+
+            # Soft reset requested by the client — tell the model to
+            # disregard all prior context on this turn. litert-lm won't
+            # let us physically drop the session, so we rely on the
+            # model respecting the banner. Flag is one-shot.
+            if pending_reset:
+                content[-1]["text"] = (
+                    "[CONVERSATION RESET. The user has ended the previous"
+                    " conversation and started a new one. Disregard all"
+                    " prior turns — they are no longer relevant. Respond"
+                    " only to the message below.]\n\n"
+                    + content[-1]["text"]
+                )
+                pending_reset = False
+
+            # Break deterministic repeat loops: if the last assistant
+            # reply is non-empty, tell the model to not reproduce it.
+            if last_reply:
+                content[-1]["text"] += (
+                    f" Your previous reply was: \"{last_reply}\" — do not"
+                    " repeat that wording. If the user is asking the same"
+                    " question again, rephrase and give a genuinely different"
+                    " answer."
+                )
 
             if system_override:
                 content[-1]["text"] = (
@@ -253,6 +308,10 @@ async def websocket_endpoint(ws: WebSocket):
                 transcription = None
                 text_response = response["content"][0]["text"]
                 print(f"LLM ({llm_time:.2f}s) [no tool]: {text_response}")
+
+            # Remember this reply so the next turn's prompt can nudge
+            # the model away from reproducing it verbatim.
+            last_reply = text_response
 
             if interrupted.is_set():
                 print("Interrupted after LLM, skipping response")

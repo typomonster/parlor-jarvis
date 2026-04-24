@@ -9,6 +9,7 @@ import {
   Lock,
   Monitor,
   RefreshCw,
+  RotateCcw,
   Video,
   X,
 } from "lucide-react";
@@ -261,7 +262,25 @@ export default function Home() {
     ensureAudioCtx();
     const ctx = audioCtxRef.current!;
     if (ctx.state === "suspended") ctx.resume();
-    streamNextTimeRef.current = ctx.currentTime + 0.05;
+
+    // Cold audio paths (AudioContext just resumed, or the render
+    // thread hasn't been processing during silence) need more headroom
+    // than the ~50 ms we used to reserve — any hiccup from LLM decode /
+    // React commit / GC would push the first chunk past its deadline
+    // and chop the start. 150 ms is imperceptible next to typical LLM
+    // latency and eliminates first-chunk glitches.
+    const prebufferSec = 0.15;
+
+    // Preroll a silent buffer so the audio graph is actively rendering
+    // by the time the real first chunk lands; otherwise the graph can
+    // still be spinning up when the buffer source tries to play.
+    const silent = ctx.createBuffer(1, Math.ceil(prebufferSec * ctx.sampleRate), ctx.sampleRate);
+    const silentSource = ctx.createBufferSource();
+    silentSource.buffer = silent;
+    silentSource.connect(ctx.destination);
+    silentSource.start(ctx.currentTime);
+
+    streamNextTimeRef.current = ctx.currentTime + prebufferSec;
     speakingStartedAtRef.current = Date.now();
     setMachineState("speaking");
   }, [stopPlayback, ensureAudioCtx, setMachineState]);
@@ -891,7 +910,7 @@ export default function Home() {
             new MediaStream(cameraStreamRef.current!.getAudioTracks()),
           positiveSpeechThreshold: 0.5,
           negativeSpeechThreshold: 0.25,
-          redemptionMs: 600,
+          redemptionMs: 1000,
           minSpeechMs: 300,
           preSpeechPadMs: 300,
           onSpeechStart: handleSpeechStart,
@@ -998,6 +1017,17 @@ export default function Home() {
     const ok = await enableScreenShare();
     if (!ok) setScreenError(t("screen.permissionDenied"));
     else setScreenError(null);
+  };
+
+  // Tell the server to disregard prior context on the next turn, and
+  // clear the local transcript so the UI matches.
+  const onResetConversation = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "reset" }));
+    }
+    setMessages([]);
+    stopPlayback();
+    if (machineStateRef.current === "speaking") setMachineState("listening");
   };
 
   // Toggle whether an active source actually sends frames to the model —
@@ -1161,6 +1191,17 @@ export default function Home() {
               <canvas ref={waveformCanvasRef} className="state-wave" />
             </div>
             <div className="parlor-chat-footer-right">
+              <Button
+                variant="ghost"
+                size="xs"
+                aria-label={t("reset.conversation")}
+                title={t("reset.conversation")}
+                onClick={onResetConversation}
+                className="gap-1 rounded-full px-2 text-[10px] font-medium uppercase tracking-wider text-foreground/50 hover:text-foreground"
+              >
+                <RotateCcw className="size-3" />
+                {t("reset.short")}
+              </Button>
               <Tooltip>
                 <TooltipTrigger
                   render={
