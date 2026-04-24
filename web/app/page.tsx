@@ -1053,7 +1053,7 @@ export default function Home() {
               variant="outline"
               className="h-auto border-white/10 bg-transparent px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-foreground/50 dark:border-white/10"
             >
-              {t("multilingual")}
+              {t("jarvis")}
             </Badge>
           </div>
         </div>
@@ -1185,7 +1185,7 @@ export default function Home() {
                 nativeButton={false}
                 render={
                   <a
-                    href="https://github.com/typomonster/parlor-multilingual"
+                    href="https://github.com/typomonster/parlor-jarvis"
                     target="_blank"
                     rel="noreferrer noopener"
                   />

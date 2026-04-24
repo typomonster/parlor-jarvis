@@ -15,7 +15,7 @@ type Dict = Record<string, string>;
 
 export const MESSAGES: Record<Locale, Dict> = {
   en: {
-    multilingual: "Multilingual",
+    jarvis: "Jarvis",
     "status.connected": "Connected",
     "status.disconnected": "Disconnected",
     "status.processing": "Processing",
@@ -82,7 +82,7 @@ export const MESSAGES: Record<Locale, Dict> = {
     "settings.invalid": "Must start with ws:// or wss://",
   },
   ko: {
-    multilingual: "다국어 지원",
+    jarvis: "Jarvis",
     "status.connected": "연결됨",
     "status.disconnected": "연결 끊김",
     "status.processing": "처리 중",
@@ -149,7 +149,7 @@ export const MESSAGES: Record<Locale, Dict> = {
     "settings.invalid": "ws:// 또는 wss://로 시작해야 합니다",
   },
   es: {
-    multilingual: "Multilingüe",
+    jarvis: "Jarvis",
     "status.connected": "Conectado",
     "status.disconnected": "Desconectado",
     "status.processing": "Procesando",
@@ -217,7 +217,7 @@ export const MESSAGES: Record<Locale, Dict> = {
     "settings.invalid": "Debe empezar con ws:// o wss://",
   },
   pt: {
-    multilingual: "Multilíngue",
+    jarvis: "Jarvis",
     "status.connected": "Conectado",
     "status.disconnected": "Desconectado",
     "status.processing": "Processando",
@@ -285,7 +285,7 @@ export const MESSAGES: Record<Locale, Dict> = {
     "settings.invalid": "Deve começar com ws:// ou wss://",
   },
   fr: {
-    multilingual: "Multilingue",
+    jarvis: "Jarvis",
     "status.connected": "Connecté",
     "status.disconnected": "Déconnecté",
     "status.processing": "Traitement",

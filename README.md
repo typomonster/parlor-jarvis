@@ -48,8 +48,8 @@ Browser (playback + transcript)
 Parlor has two pieces: a **FastAPI** backend (`src/`) and a **Next.js** frontend (`web/`). In development you run both — Next proxies `/ws` to FastAPI so the browser talks to a single origin.
 
 ```bash
-git clone https://github.com/typomonster/parlor-multilingual.git
-cd parlor-multilingual
+git clone https://github.com/typomonster/parlor-jarvis.git
+cd parlor-jarvis
 ```
 
 **Terminal 1 — backend:**
