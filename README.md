@@ -5,7 +5,9 @@ On-device, real-time multimodal AI. Have natural voice and vision conversations 
 Parlor Jarvis is an enhanced fork of [Parlor](https://github.com/fikrikarim/parlor) with stronger multilingual capabilities and richer image inputs. You talk, show your camera (or screen, PDF, or video), and it talks back — all locally.
 
 
-## Parlor Jarvis Demo: Multimodal inputs in Korean
+## Parlor Jarvis Demo
+
+_Video generation in ComfyUI._
 
 ![Parlor Jarvis Demo](artifacts/parlor_jarvis_demo.jpg)
 
