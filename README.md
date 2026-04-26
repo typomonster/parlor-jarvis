@@ -4,18 +4,27 @@ On-device, real-time multimodal AI. Have natural voice and vision conversations 
 
 Parlor Jarvis is an enhanced fork of [Parlor](https://github.com/fikrikarim/parlor) with stronger multilingual capabilities and richer image inputs. You talk, show your camera (or screen, PDF, or video), and it talks back — all locally.
 
+
+## Parlor Jarvis Demo: Multimodal inputs in Korean
+
+![Parlor Jarvis Demo](artifacts/parlor_jarvis_demo.jpg)
+
+_Image: [AI-generated influencer](https://x.com/heyrobinai/status/2030615175523627301)_
+
+Parlor:
+
 https://github.com/user-attachments/assets/cb0ffb2e-f84f-48e7-872c-c5f7b5c6d51f
 
 > **Research preview.** This is an early experiment. Expect rough edges and bugs.
 
 ## Parlor vs Parlor Jarvis
 
-| Capability         | Parlor                              | Parlor Jarvis                                                                                  |
-| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Language model** | Gemma 4 E2B                         | Supergemma 4 E4B (abliterated, enhanced Korean)                                                |
-| **Text-to-speech** | Kokoro (English only)               | Supertonic — 5 languages: English (en), Korean (ko), Spanish (es), Portuguese (pt), French (fr) |
-| **Image input**    | Camera                              | Camera **+ screen sharing, PDF, video**                                                        |
-| **Frontend**       | Raw HTML                            | Next.js                                                                                        |
+| Capability         | Parlor                | Parlor Jarvis                                                                                   |
+| ------------------ | --------------------- | ----------------------------------------------------------------------------------------------- |
+| **Language model** | Gemma 4 E2B           | Supergemma 4 E4B (abliterated, enhanced Korean)                                                 |
+| **Text-to-speech** | Kokoro (English only) | Supertonic — 5 languages: English (en), Korean (ko), Spanish (es), Portuguese (pt), French (fr) |
+| **Image input**    | Camera                | Camera **+ screen sharing, PDF, video**                                                         |
+| **Frontend**       | Raw HTML              | Next.js                                                                                         |
 
 # Why?
 
@@ -98,26 +107,26 @@ Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus 
 
 ### Backend (`src/`)
 
-| Variable           | Default                                    | Description                                                               |
-| ------------------ | ------------------------------------------ | ------------------------------------------------------------------------- |
-| `MODEL_PATH`       | auto-download from HuggingFace                       | Path to a local `.litertlm` file                                          |
-| `HF_REPO`          | `typomonster/supergemma4-e4b-abliterated-litert-lm`  | HuggingFace repo to pull the model from                                   |
-| `HF_FILENAME`      | `supergemma4-e4b-abliterated.litertlm`               | File within `HF_REPO` to download                                         |
-| `PORT`             | `8000`                                     | FastAPI port                                                              |
-| `TTS_ENGINE`       | `supertonic`                               | `supertonic` (multilingual — en/ko/es/pt/fr) or `kokoro` (English, faster) |
-| `KOKORO_ONNX`      | unset                                      | Force the Kokoro ONNX backend on Apple Silicon                            |
-| `SUPERTONIC_ONNX`  | unset                                      | Force the Supertonic ONNX backend on Apple Silicon                        |
-| `SUPERTONIC_MLX_REPO`  | `typomonster/supertonic-2-mlx`         | HF repo for the Supertonic MLX checkpoint                                 |
-| `SUPERTONIC_ONNX_REPO` | `Supertone/supertonic-2`               | HF repo for the Supertonic ONNX checkpoint                                |
+| Variable               | Default                                             | Description                                                                |
+| ---------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| `MODEL_PATH`           | auto-download from HuggingFace                      | Path to a local `.litertlm` file                                           |
+| `HF_REPO`              | `typomonster/supergemma4-e4b-abliterated-litert-lm` | HuggingFace repo to pull the model from                                    |
+| `HF_FILENAME`          | `supergemma4-e4b-abliterated.litertlm`              | File within `HF_REPO` to download                                          |
+| `PORT`                 | `8000`                                              | FastAPI port                                                               |
+| `TTS_ENGINE`           | `supertonic`                                        | `supertonic` (multilingual — en/ko/es/pt/fr) or `kokoro` (English, faster) |
+| `KOKORO_ONNX`          | unset                                               | Force the Kokoro ONNX backend on Apple Silicon                             |
+| `SUPERTONIC_ONNX`      | unset                                               | Force the Supertonic ONNX backend on Apple Silicon                         |
+| `SUPERTONIC_MLX_REPO`  | `typomonster/supertonic-2-mlx`                      | HF repo for the Supertonic MLX checkpoint                                  |
+| `SUPERTONIC_ONNX_REPO` | `Supertone/supertonic-2`                            | HF repo for the Supertonic ONNX checkpoint                                 |
 
 #### TTS engines
 
 Parlor Jarvis ships with two interchangeable TTS backends, selected at runtime via `TTS_ENGINE`:
 
-| Engine                | Languages                    | Apple Silicon               | Linux / x86             |
-| --------------------- | ---------------------------- | --------------------------- | ----------------------- |
-| `supertonic` (default)| `en`, `ko`, `es`, `pt`, `fr` | `mlx-audio` fork[^st] (MLX) | Supertonic ONNX Runtime |
-| `kokoro`              | English only                 | `mlx-audio` (MLX)           | `kokoro-onnx`           |
+| Engine                 | Languages                    | Apple Silicon               | Linux / x86             |
+| ---------------------- | ---------------------------- | --------------------------- | ----------------------- |
+| `supertonic` (default) | `en`, `ko`, `es`, `pt`, `fr` | `mlx-audio` fork[^st] (MLX) | Supertonic ONNX Runtime |
+| `kokoro`               | English only                 | `mlx-audio` (MLX)           | `kokoro-onnx`           |
 
 Force ONNX instead of MLX on macOS with `SUPERTONIC_ONNX=1` or `KOKORO_ONNX=1`. Language is selected automatically from the frontend's active locale (Supertonic only — Kokoro ignores it). Set `TTS_ENGINE=kokoro` if you want the lighter English-only engine.
 
@@ -125,11 +134,11 @@ Force ONNX instead of MLX on macOS with `SUPERTONIC_ONNX=1` or `KOKORO_ONNX=1`. 
 
 #### Supported models
 
-| Model                                                                      | `HF_REPO`                                             | `HF_FILENAME`                           |
-| -------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------- |
-| **Supergemma4-E4B (abliterated)** _(default — strong multilingual, Korean)_| `typomonster/supergemma4-e4b-abliterated-litert-lm`   | `supergemma4-e4b-abliterated.litertlm`  |
-| **Gemma 4 E2B** _(smallest, fastest)_                                      | `litert-community/gemma-4-E2B-it-litert-lm`           | `gemma-4-E2B-it.litertlm`               |
-| **Gemma 4 E4B** _(upstream base)_                                          | `litert-community/gemma-4-E4B-it-litert-lm`           | `gemma-4-E4B-it.litertlm`               |
+| Model                                                                       | `HF_REPO`                                           | `HF_FILENAME`                          |
+| --------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------- |
+| **Supergemma4-E4B (abliterated)** _(default — strong multilingual, Korean)_ | `typomonster/supergemma4-e4b-abliterated-litert-lm` | `supergemma4-e4b-abliterated.litertlm` |
+| **Gemma 4 E2B** _(smallest, fastest)_                                       | `litert-community/gemma-4-E2B-it-litert-lm`         | `gemma-4-E2B-it.litertlm`              |
+| **Gemma 4 E4B** _(upstream base)_                                           | `litert-community/gemma-4-E4B-it-litert-lm`         | `gemma-4-E4B-it.litertlm`              |
 
 Switch models by setting both env vars, e.g.:
 
