@@ -1,31 +1,44 @@
-# Parlor
+# Parlor Jarvis
 
 On-device, real-time multimodal AI. Have natural voice and vision conversations with an AI that runs entirely on your machine.
 
-Parlor uses [Gemma 4 E2B](https://huggingface.co/google/gemma-4-E2B-it) for understanding speech and vision, and [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) for text-to-speech. You talk, show your camera, and it talks back, all locally.
+Parlor Jarvis is an enhanced fork of [Parlor](https://github.com/fikrikarim/parlor) with stronger multilingual capabilities and richer image inputs. You talk, show your camera (or screen, PDF, or video), and it talks back — all locally.
 
 https://github.com/user-attachments/assets/cb0ffb2e-f84f-48e7-872c-c5f7b5c6d51f
 
 > **Research preview.** This is an early experiment. Expect rough edges and bugs.
 
+## Parlor vs Parlor Jarvis
+
+| Capability         | Parlor                              | Parlor Jarvis                                                                                  |
+| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Language model** | Gemma 4 E2B                         | Supergemma 4 E4B (abliterated, enhanced Korean)                                                |
+| **Text-to-speech** | Kokoro (English only)               | Supertonic — 5 languages: English (en), Korean (ko), Spanish (es), Portuguese (pt), French (fr) |
+| **Image input**    | Camera                              | Camera **+ screen sharing, PDF, video**                                                        |
+| **Frontend**       | Raw HTML                            | Next.js                                                                                        |
+
 # Why?
 
-I'm [self-hosting a totally free voice AI](https://www.fikrikarim.com/bule-ai-initial-release/) on my home server to help people learn speaking English. It has hundreds of monthly active users, and I've been thinking about how to keep it free while making it sustainable.
+Local models are quickly catching up on both text generation and image understanding, and one of the most exciting breakthroughs is multilingual capability — strong performance across European languages (Spanish, Portuguese, French, …) and Asian languages (Korean, …), not just English. Parlor Jarvis is our take on what a fully on-device, multilingual, multimodal assistant can feel like today: speak any of the supported languages, point your camera, share your screen, drop in a PDF or video, and have a real conversation with a model running entirely on your machine. Enjoy!
 
-The obvious answer: run everything on-device, eliminating any server cost. Six months ago I needed an RTX 5090 to run just the voice models in real-time.
-
-Google just released a super capable small model that I can run on my M3 Pro in real-time, with vision too! Sure you can't do agentic coding with this, but it is a game-changer for people learning a new language. Imagine a few years from now that people can run this locally on their phones. They can point their camera at objects and talk about them. And this model is multi-lingual, so people can always fallback to their native language if they want. This is essentially what OpenAI demoed a few years ago.
+> **Original author's why** (from [Parlor](https://github.com/fikrikarim/parlor)):
+>
+> I'm [self-hosting a totally free voice AI](https://www.fikrikarim.com/bule-ai-initial-release/) on my home server to help people learn speaking English. It has hundreds of monthly active users, and I've been thinking about how to keep it free while making it sustainable.
+>
+> The obvious answer: run everything on-device, eliminating any server cost. Six months ago I needed an RTX 5090 to run just the voice models in real-time.
+>
+> Google just released a super capable small model that I can run on my M3 Pro in real-time, with vision too! Sure you can't do agentic coding with this, but it is a game-changer for people learning a new language. Imagine a few years from now that people can run this locally on their phones. They can point their camera at objects and talk about them. And this model is multi-lingual, so people can always fallback to their native language if they want. This is essentially what OpenAI demoed a few years ago.
 
 ## How it works
 
 ```
-Browser (mic + camera)
+Browser (mic + camera / screen / PDF / video)
     │
     │  WebSocket (audio PCM + JPEG frames)
     ▼
 FastAPI server
-    ├── Gemma 4 E2B via LiteRT-LM (GPU)  →  understands speech + vision
-    └── Kokoro TTS (MLX on Mac, ONNX on Linux)  →  speaks back
+    ├── Supergemma 4 E4B via LiteRT-LM (GPU)  →  understands speech + vision
+    └── Supertonic TTS (MLX on Mac, ONNX on Linux)  →  speaks back
     │
     │  WebSocket (streamed audio chunks)
     ▼
@@ -45,7 +58,7 @@ Browser (playback + transcript)
 
 ## Quick start
 
-Parlor has two pieces: a **FastAPI** backend (`src/`) and a **Next.js** frontend (`web/`). In development you run both — Next proxies `/ws` to FastAPI so the browser talks to a single origin.
+Parlor Jarvis has two pieces: a **FastAPI** backend (`src/`) and a **Next.js** frontend (`web/`). In development you run both — Next proxies `/ws` to FastAPI so the browser talks to a single origin.
 
 ```bash
 git clone https://github.com/typomonster/parlor-jarvis.git
@@ -81,6 +94,8 @@ Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus 
 
 ## Configuration
 
+> **Note:** The default configuration is optimized for **Korean**, even though both the LLM and TTS support other languages natively. You can swap the LLM or TTS models via the env vars below — see [Supported models](#supported-models) and [TTS engines](#tts-engines).
+
 ### Backend (`src/`)
 
 | Variable           | Default                                    | Description                                                               |
@@ -97,7 +112,7 @@ Models are downloaded automatically on first run (~2.6 GB for Gemma 4 E2B, plus 
 
 #### TTS engines
 
-Parlor ships with two interchangeable TTS backends, selected at runtime via `TTS_ENGINE`:
+Parlor Jarvis ships with two interchangeable TTS backends, selected at runtime via `TTS_ENGINE`:
 
 | Engine                | Languages                    | Apple Silicon               | Linux / x86             |
 | --------------------- | ---------------------------- | --------------------------- | ----------------------- |
@@ -144,7 +159,7 @@ Decode speed: ~83 tokens/sec on GPU (Apple M3 Pro).
 ## Project structure
 
 ```
-parlor/
+parlor-jarvis/
 ├── src/                       # Python backend
 │   ├── server.py              # FastAPI WebSocket server + Gemma 4 inference
 │   ├── tts.py                 # Platform-aware TTS (MLX on Mac, ONNX on Linux)
@@ -165,9 +180,21 @@ parlor/
 
 - [Gemma 4](https://ai.google.dev/gemma) by Google DeepMind
 - [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM) by Google AI Edge
-- [Supertonic](https://huggingface.co/Supertone/supertonic-2) multilingual TTS by Supertone
+- [Supertonic](https://huggingface.co/Supertone/supertonic-2) multilingual TTS by Supertone ([github](https://github.com/supertone-inc/supertonic))
+- [Supergemma 4 E4B (abliterated)](https://huggingface.co/Jiunsong/supergemma4-e4b-abliterated) by Jiunsong
 - [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) TTS by Hexgrad
 - [Silero VAD](https://github.com/snakers4/silero-vad) for browser voice activity detection
+
+## Our open source contributions
+
+To make Parlor Jarvis possible, we ported and packaged a couple of upstream models for on-device use and shared everything back:
+
+- **Supertonic-2 → MLX** for fast, native Apple Silicon TTS
+  - MLX checkpoint: [typomonster/supertonic-2-mlx](https://huggingface.co/typomonster/supertonic-2-mlx)
+  - `mlx-audio` patch adding Supertonic support: [typomonster/mlx-audio](https://github.com/typomonster/mlx-audio)
+  - Standalone Supertonic + MLX runner: [typomonster/supertonic](https://github.com/typomonster/supertonic)
+- **Supergemma 4 → LiteRT-LM** for on-device multilingual speech + vision
+  - LiteRT-LM checkpoint: [typomonster/supergemma4-e4b-abliterated-litert-lm](https://huggingface.co/typomonster/supergemma4-e4b-abliterated-litert-lm)
 
 ## License
 
