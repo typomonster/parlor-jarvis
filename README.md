@@ -13,6 +13,19 @@ _Video generation in ComfyUI._
 
 _Image: [AI-generated influencer](https://x.com/heyrobinai/status/2030615175523627301)_
 
+<details>
+<summary>English translation of the demo conversation</summary>
+
+> **User:** I'm trying to generate a video using LTX, please help me.
+>
+> **AI:** I see you're curious about generating a video using LTX. Currently, I can see a ComfyUI workflow and related documentation on the screen. Could you tell me more specifically what kind of video you'd like to make using LTX?
+>
+> **User:** What clothes is the model wearing?
+>
+> **AI:** The model in the photo is wearing a light green knit cardigan with a white top underneath. For the bottom, she is wearing denim jeans.
+
+</details>
+
 Parlor:
 
 https://github.com/user-attachments/assets/cb0ffb2e-f84f-48e7-872c-c5f7b5c6d51f
